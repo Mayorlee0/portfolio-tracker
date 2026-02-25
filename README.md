@@ -5,10 +5,8 @@ A lightweight MVP based on `port.md` for tracking crypto, Nigerian stocks, and m
 ## Features
 
 - Manual transaction entry for buy/sell/deposit/withdraw.
-- Symbol autocomplete with crypto/stock/cash suggestions and icon previews.
 - Holdings aggregation with average cost and unrealized P&L.
-- Realized P&L tracking from sell/withdraw transactions.
-- Dashboard cards for total value, unrealized P&L, realized P&L, total P&L, and weighted 24h/7d/30d changes.
+- Dashboard with total value and weighted 24h/7d/30d changes.
 - Display currency toggle (USD/EUR/NGN/GHS).
 - Editable latest prices table (used for valuation and period percentages).
 - Local-first persistence via browser `localStorage`.

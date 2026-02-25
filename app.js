@@ -11,32 +11,9 @@ const FX_TO_USD = {
   GHS: 0.075
 };
 
-const CRYPTO_CATALOG = [
-  ["BTC", "Bitcoin"],
-  ["ETH", "Ethereum"],
-  ["ZEC", "Zcash"],
-  ["USDT", "Tether"],
-  ["BNB", "BNB"],
-  ["SOL", "Solana"],
-  ["XRP", "XRP"],
-  ["DOGE", "Dogecoin"]
-].map(([symbol, name]) => ({ symbol, name, assetClass: "crypto" }));
-
-const STOCK_CATALOG = [
-  ["DANGCEM", "Dangote Cement"],
-  ["MTNN", "MTN Nigeria"],
-  ["GTCO", "Guaranty Trust Holding"],
-  ["AAPL", "Apple"],
-  ["MSFT", "Microsoft"],
-  ["NVDA", "NVIDIA"]
-].map(([symbol, name]) => ({ symbol, name, assetClass: "stock" }));
-
-const CASH_CATALOG = ["USD", "EUR", "NGN", "GHS"].map((symbol) => ({ symbol, name: `${symbol} Cash`, assetClass: "cash" }));
-
 const seedPrices = {
   BTC: { currency: "USD", price: 62000, change24h: 1.2, change7d: 3.1, change30d: 7.6 },
   ETH: { currency: "USD", price: 3300, change24h: 0.5, change7d: 1.5, change30d: 9.2 },
-  ZEC: { currency: "USD", price: 270, change24h: -0.6, change7d: 2.1, change30d: 4.5 },
   DANGCEM: { currency: "NGN", price: 420, change24h: -0.4, change7d: 0.8, change30d: 2.2 }
 };
 
@@ -49,8 +26,6 @@ const state = {
 const currencyPicker = document.getElementById("displayCurrency");
 const transactionForm = document.getElementById("transactionForm");
 const priceForm = document.getElementById("priceForm");
-const txSymbolInput = document.getElementById("txSymbol");
-const txSuggestions = document.getElementById("txSymbolSuggestions");
 
 currencyPicker.value = state.settings.displayCurrency;
 transactionForm.date.value = new Date().toISOString().slice(0, 10);
@@ -76,107 +51,41 @@ function pctClass(value) {
   return "";
 }
 
-function iconFor(symbol, assetClass) {
-  const bg = assetClass === "crypto" ? "#eaf2ff" : assetClass === "stock" ? "#e8f7ec" : "#fff4e6";
-  const fg = assetClass === "crypto" ? "#1b64f0" : assetClass === "stock" ? "#1f8f43" : "#bd6f00";
-  const text = symbol.slice(0, 2);
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect x='0' y='0' width='32' height='32' rx='16' fill='${bg}'/><text x='16' y='21' text-anchor='middle' font-size='12' font-family='Arial' fill='${fg}'>${text}</text></svg>`;
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-}
-
-function getCatalogFor(assetClass) {
-  if (assetClass === "crypto") return CRYPTO_CATALOG;
-  if (assetClass === "stock") return STOCK_CATALOG;
-  return CASH_CATALOG;
-}
-
-function renderSuggestions() {
-  const term = txSymbolInput.value.trim().toUpperCase();
-  const assetClass = transactionForm.assetClass.value;
-  const catalog = getCatalogFor(assetClass);
-  const picks = catalog
-    .filter((item) => !term || item.symbol.includes(term) || item.name.toUpperCase().includes(term))
-    .slice(0, 8);
-
-  if (!picks.length || (term && picks.length === 1 && picks[0].symbol === term)) {
-    txSuggestions.classList.remove("open");
-    txSuggestions.innerHTML = "";
-    return;
-  }
-
-  txSuggestions.innerHTML = picks
-    .map(
-      (item) => `
-      <div class="suggestion-item" data-symbol="${item.symbol}">
-        <img class="asset-icon" src="${iconFor(item.symbol, item.assetClass)}" alt="${item.symbol} logo" />
-        <strong>${item.symbol}</strong>
-        <small>${item.name}</small>
-      </div>`
-    )
-    .join("");
-  txSuggestions.classList.add("open");
-
-  txSuggestions.querySelectorAll(".suggestion-item").forEach((row) => {
-    row.addEventListener("click", () => {
-      txSymbolInput.value = row.dataset.symbol;
-      txSuggestions.classList.remove("open");
-      txSuggestions.innerHTML = "";
-      txSymbolInput.focus();
-    });
-  });
-}
-
-function aggregatePortfolio() {
-  const holdingsMap = new Map();
-  let realizedUsd = 0;
+function aggregateHoldings() {
+  const map = new Map();
 
   for (const tx of state.transactions) {
     const key = tx.symbol.toUpperCase();
-    if (!holdingsMap.has(key)) {
-      holdingsMap.set(key, { symbol: key, assetClass: tx.assetClass, qty: 0, costUsd: 0 });
+    if (!map.has(key)) {
+      map.set(key, { symbol: key, assetClass: tx.assetClass, qty: 0, costUsd: 0 });
     }
 
-    const h = holdingsMap.get(key);
+    const h = map.get(key);
     const txValueUsd = convert(tx.quantity * tx.price, tx.currency, "USD");
 
     if (tx.type === "buy" || tx.type === "deposit") {
       h.qty += tx.quantity;
       h.costUsd += txValueUsd;
-      continue;
+    } else {
+      const avg = h.qty > 0 ? h.costUsd / h.qty : 0;
+      h.qty -= tx.quantity;
+      h.costUsd -= avg * tx.quantity;
     }
 
-    const sellQty = Math.min(tx.quantity, h.qty);
-    const avgCost = h.qty > 0 ? h.costUsd / h.qty : 0;
-    const proceedsUsd = convert(sellQty * tx.price, tx.currency, "USD");
-    const removedCostUsd = avgCost * sellQty;
-
-    if (tx.assetClass !== "cash") {
-      realizedUsd += proceedsUsd - removedCostUsd;
-    }
-
-    h.qty -= sellQty;
-    h.costUsd -= removedCostUsd;
-
-    if (tx.quantity > sellQty + Number.EPSILON) {
-      alert(`Warning: ${h.symbol} sell/withdraw quantity exceeded holdings and was clipped to current balance.`);
-    }
-
-    if (h.qty < 0.0000001) {
+    if (h.qty < 0) {
+      alert(`Warning: ${h.symbol} has negative holdings due to sells/withdrawals above balance.`);
       h.qty = 0;
       h.costUsd = 0;
     }
   }
 
-  const holdings = [...holdingsMap.values()].filter((h) => h.qty > 0.0000001);
-  return { holdings, realizedUsd };
+  return [...map.values()].filter((h) => h.qty > 0.0000001);
 }
 
 function pricedHolding(holding) {
-  const fallbackPriceUsd = holding.qty > 0 ? holding.costUsd / holding.qty : 0;
   const quote = state.prices[holding.symbol] || {
     currency: "USD",
-    // Key bug fix: when quote is missing (e.g., newly added ZEC), value at average cost instead of zero.
-    price: holding.assetClass === "cash" ? 1 : fallbackPriceUsd,
+    price: holding.assetClass === "cash" ? 1 : 0,
     change24h: 0,
     change7d: 0,
     change30d: 0
@@ -190,32 +99,17 @@ function pricedHolding(holding) {
   return { ...holding, ...quote, priceUsd, valueUsd, avgCostUsd, pnlUsd };
 }
 
-function renderDashboard(holdings, totals) {
+function renderDashboard(holdings) {
   const displayCurrency = state.settings.displayCurrency;
   const totalUsd = holdings.reduce((sum, h) => sum + h.valueUsd, 0);
-  const unrealizedUsd = holdings.reduce((sum, h) => sum + h.pnlUsd, 0);
-  const totalPnlUsd = unrealizedUsd + totals.realizedUsd;
-
-  document.getElementById("totalValue").textContent = formatMoney(convert(totalUsd, "USD", displayCurrency), displayCurrency);
-
-  const metricMap = [
-    ["totalUnrealized", unrealizedUsd],
-    ["totalRealized", totals.realizedUsd],
-    ["totalPnL", totalPnlUsd]
-  ];
-
-  for (const [id, usd] of metricMap) {
-    const el = document.getElementById(id);
-    const value = convert(usd, "USD", displayCurrency);
-    el.textContent = formatMoney(value, displayCurrency);
-    el.className = pctClass(value);
-  }
-
   const weightedChange = (windowKey) => {
     if (totalUsd === 0) return 0;
     const weighted = holdings.reduce((sum, h) => sum + h.valueUsd * ((h[windowKey] || 0) / 100), 0);
     return (weighted / totalUsd) * 100;
   };
+
+  const totalDisplay = convert(totalUsd, "USD", displayCurrency);
+  document.getElementById("totalValue").textContent = formatMoney(totalDisplay, displayCurrency);
 
   const keys = [
     ["change24h", weightedChange("change24h")],
@@ -240,7 +134,7 @@ function renderHoldings(holdings) {
       const pnl = convert(h.pnlUsd, "USD", cur);
       return `
       <tr>
-        <td><span class="symbol-cell"><img class="asset-icon" src="${iconFor(h.symbol, h.assetClass)}" alt="${h.symbol} logo" />${h.symbol}</span></td>
+        <td>${h.symbol}</td>
         <td>${h.assetClass}</td>
         <td>${h.qty.toFixed(4)}</td>
         <td>${formatMoney(avg, cur)}</td>
@@ -261,7 +155,7 @@ function renderTransactions() {
         <td>${tx.date}</td>
         <td>${tx.type}</td>
         <td>${tx.assetClass}</td>
-        <td><span class="symbol-cell"><img class="asset-icon" src="${iconFor(tx.symbol.toUpperCase(), tx.assetClass)}" alt="${tx.symbol} logo" />${tx.symbol.toUpperCase()}</span></td>
+        <td>${tx.symbol.toUpperCase()}</td>
         <td>${tx.quantity}</td>
         <td>${tx.price}</td>
         <td>${tx.currency}</td>
@@ -284,10 +178,8 @@ function renderPrices() {
   const tbody = document.querySelector("#pricesTable tbody");
   tbody.innerHTML = Object.entries(state.prices)
     .map(([symbol, p]) => {
-      const found = [...CRYPTO_CATALOG, ...STOCK_CATALOG, ...CASH_CATALOG].find((x) => x.symbol === symbol);
-      const assetClass = found?.assetClass || "crypto";
       return `<tr>
-        <td><span class="symbol-cell"><img class="asset-icon" src="${iconFor(symbol, assetClass)}" alt="${symbol} logo" />${symbol}</span></td>
+        <td>${symbol}</td>
         <td>${formatMoney(p.price, p.currency)}</td>
         <td class="${pctClass(p.change24h)}">${p.change24h}%</td>
         <td class="${pctClass(p.change7d)}">${p.change7d}%</td>
@@ -298,9 +190,8 @@ function renderPrices() {
 }
 
 function render() {
-  const portfolio = aggregatePortfolio();
-  const holdings = portfolio.holdings.map(pricedHolding);
-  renderDashboard(holdings, portfolio);
+  const holdings = aggregateHoldings().map(pricedHolding);
+  renderDashboard(holdings);
   renderHoldings(holdings);
   renderTransactions();
   renderPrices();
@@ -322,8 +213,6 @@ transactionForm.addEventListener("submit", (e) => {
   saveState();
   transactionForm.reset();
   transactionForm.date.value = new Date().toISOString().slice(0, 10);
-  txSuggestions.classList.remove("open");
-  txSuggestions.innerHTML = "";
   render();
 });
 
@@ -347,16 +236,6 @@ currencyPicker.addEventListener("change", () => {
   state.settings.displayCurrency = currencyPicker.value;
   saveState();
   render();
-});
-
-transactionForm.assetClass.addEventListener("change", renderSuggestions);
-txSymbolInput.addEventListener("input", renderSuggestions);
-txSymbolInput.addEventListener("focus", renderSuggestions);
-
-document.addEventListener("click", (e) => {
-  if (!transactionForm.contains(e.target)) {
-    txSuggestions.classList.remove("open");
-  }
 });
 
 render();
