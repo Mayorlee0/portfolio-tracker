@@ -20,44 +20,13 @@
       </div>
     </header>
 
-    <section class="card auth-card" id="authCard">
-      <h2>Connect Supabase + Sign in</h2>
-      <p id="authStatus">Not connected.</p>
-
-      <form id="supabaseConfigForm" class="inline-form">
-        <input name="url" placeholder="Supabase URL (https://xxxx.supabase.co)" required />
-        <input name="anonKey" placeholder="Supabase anon key" required />
-        <button type="submit">Connect</button>
-      </form>
-
-      <form id="authForm" class="inline-form">
-        <input name="email" type="email" placeholder="Email" required />
-        <input name="password" type="password" placeholder="Password" required />
-        <button type="submit" data-mode="signin">Sign in</button>
-        <button type="button" id="signupBtn">Sign up</button>
-        <button type="button" id="logoutBtn">Sign out</button>
-      </form>
-    </section>
-
-    <main id="appMain" class="app-hidden">
+    <main>
       <section class="card" id="dashboard">
         <h2>Dashboard</h2>
         <div class="metrics">
           <article>
             <span>Total value</span>
             <strong id="totalValue">-</strong>
-          </article>
-          <article>
-            <span>Total unrealized P&amp;L</span>
-            <strong id="totalUnrealized">-</strong>
-          </article>
-          <article>
-            <span>Total realized P&amp;L</span>
-            <strong id="totalRealized">-</strong>
-          </article>
-          <article>
-            <span>Total P&amp;L</span>
-            <strong id="totalPnL">-</strong>
           </article>
           <article>
             <span>24h change</span>
@@ -98,10 +67,9 @@
               <option value="cash">Cash</option>
             </select>
           </label>
-          <label class="symbol-field">
+          <label>
             Symbol
-            <input id="txSymbol" name="symbol" placeholder="BTC, AAPL, NGN" required autocomplete="off" />
-            <div id="txSymbolSuggestions" class="suggestions"></div>
+            <input name="symbol" placeholder="BTC, AAPL, NGN" required />
           </label>
           <label>
             Quantity
@@ -191,9 +159,8 @@
       </section>
     </main>
 
-    <footer>MVP in progress: auth + DB-backed transactions through Supabase, with local fallback for prices.</footer>
+    <footer>Private local MVP prototype. Data is stored in your browser localStorage.</footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
   </body>
 </html>
