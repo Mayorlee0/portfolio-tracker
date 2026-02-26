@@ -20,25 +20,13 @@
       </div>
     </header>
 
-    <main id="appMain">
+    <main>
       <section class="card" id="dashboard">
         <h2>Dashboard</h2>
         <div class="metrics">
           <article>
             <span>Total value</span>
             <strong id="totalValue">-</strong>
-          </article>
-          <article>
-            <span>Total unrealized P&amp;L</span>
-            <strong id="totalUnrealized">-</strong>
-          </article>
-          <article>
-            <span>Total realized P&amp;L</span>
-            <strong id="totalRealized">-</strong>
-          </article>
-          <article>
-            <span>Total P&amp;L</span>
-            <strong id="totalPnL">-</strong>
           </article>
           <article>
             <span>24h change</span>
@@ -79,10 +67,9 @@
               <option value="cash">Cash</option>
             </select>
           </label>
-          <label class="symbol-field">
+          <label>
             Symbol
-            <input id="txSymbol" name="symbol" placeholder="BTC, AAPL, NGN" required autocomplete="off" />
-            <div id="txSymbolSuggestions" class="suggestions"></div>
+            <input name="symbol" placeholder="BTC, AAPL, NGN" required />
           </label>
           <label>
             Quantity
@@ -106,13 +93,7 @@
       </section>
 
       <section class="card">
-        <div class="section-row">
-          <h2>Latest Prices</h2>
-          <button id="refreshPricesBtn" type="button">Refresh live prices</button>
-        </div>
-        <p id="backendStatus" class="muted">Connecting backend...</p>
-        <p id="marketStatus" class="muted">Loading live market data...</p>
-
+        <h2>Latest Prices</h2>
         <form id="priceForm" class="inline-form">
           <input name="symbol" placeholder="Symbol" required />
           <input name="price" type="number" step="any" min="0" placeholder="Price" required />
@@ -178,9 +159,8 @@
       </section>
     </main>
 
-    <footer>MVP in progress: Supabase backend is connected automatically; live prices use CoinGecko + FX API.</footer>
+    <footer>Private local MVP prototype. Data is stored in your browser localStorage.</footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
   </body>
 </html>
