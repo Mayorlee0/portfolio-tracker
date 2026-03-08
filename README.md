@@ -11,7 +11,7 @@ A lightweight MVP based on `port.md` for tracking crypto, Nigerian stocks, and m
 - Realized P&L tracking from sell/withdraw transactions.
 - Dashboard cards for total value, unrealized P&L, realized P&L, total P&L, and weighted 24h/7d/30d changes, including period tabs.
 - Display currency toggle (USD/EUR/NGN/GHS).
-- Live crypto prices from CoinPaprika (free, no-key) with CoinGecko fallback, stock prices via Yahoo Finance with Stooq fallback, and live FX rates from ExchangeRate API (with refresh button + periodic auto-refresh).
+- Live crypto prices from CoinGecko, stock prices via Yahoo Finance with Stooq fallback, and live FX rates from ExchangeRate API (with refresh button + periodic auto-refresh).
 - Supabase backend connection is automatic in code (URL + anon key), with no Supabase config/sign-in controls shown in UI.
 
 ## Run
@@ -30,7 +30,6 @@ Then open `http://localhost:4173`.
 - Crypto and FX prices are fetched live at runtime; fallback cached values are used if network calls fail.
 - Stock prices use Yahoo first, then Stooq, then AlphaVantage demo fallback when available; provider/rate-limit restrictions may cause partial stock refresh warnings.
 - Browser-safe Supabase keys only (URL + anon key). Never expose service role keys or DB passwords in frontend code.
-- New Supabase projects start with an empty `public` schema; run `supabase/schema.sql` and then `supabase/verify.sql` before expecting backend transaction reads/writes.
 
 ## Next steps
 

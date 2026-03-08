@@ -1,50 +1,36 @@
-# Supabase setup (backend auto-connect mode)
+# Supabase setup (Step 1 + Step 2 kickoff)
 
-This repo now auto-connects to Supabase in code using the public URL + anon key.
+This repo now includes auth wiring in the frontend and SQL schema with RLS.
 
-## 1) Run schema SQL
+## 1) Create project and get credentials
+
+1. Create a Supabase project.
+2. In **Project Settings → API**, copy:
+   - `Project URL`
+   - `anon public` key
+3. In the app UI, paste those values in **Connect Supabase + Sign in** and click **Connect**.
+
+## 2) Run schema SQL
 
 1. Open Supabase SQL editor.
 2. Paste `supabase/schema.sql` and execute.
 3. Confirm tables exist:
    - `profiles`, `assets`, `transactions`, `latest_prices_cache`, `fx_rates_cache`, `portfolio_snapshots`
-4. Run `supabase/verify.sql` to get PASS/FAIL checks for tables, indexes, RLS, and policies.
 
-## Why your Supabase table editor may look empty
-
-If you just created a new Supabase project, seeing **no tables** in `public` is expected.
-The app does not auto-create DB schema from the browser.
-You must run the SQL migration manually:
-
-1. Open **SQL Editor** in Supabase.
-2. Run `supabase/schema.sql` from this repo.
-3. Then run `supabase/verify.sql` and confirm checks return `PASS`.
-
-Until this is done, backend status in the app can show relation/table errors.
-
-## 2) Decide auth mode for DB writes
-
-Current app attempts `signInAnonymously()` for DB-backed transaction writes.
-
-- If anonymous auth is **enabled**, transactions are written to Supabase.
-- If anonymous auth is **disabled**, app uses local transaction fallback and still fetches live market prices.
-
-To enable anonymous auth in Supabase:
+## 3) Enable Auth users
 
 1. Go to **Authentication → Providers**.
-2. Enable **Anonymous sign-ins**.
+2. Enable Email/Password.
+3. Optionally disable email confirmation for local MVP speed.
 
-## 3) Verify runtime status in UI
+## 4) Verify RLS
 
-In the app, check:
+1. Create two users (A, B).
+2. Sign in as A and create a transaction.
+3. Sign in as B and confirm A’s transaction is not visible.
 
-- `backendStatus`: should indicate backend connected or fallback reason.
-- `marketStatus`: should indicate live market refresh success.
+## Notes
 
-## Important security note
-
-- Never expose `service_role`, `secret`, `JWT secret`, or DB passwords in frontend code.
-- If those values were ever shared publicly, rotate them immediately (see `SECURITY_ALERT.md`).
-
-
-If `overall` returns `FAIL`, re-run `supabase/schema.sql` first, then `supabase/verify.sql` again.
+- The app now hides the main dashboard until you are authenticated.
+- Transaction create/delete and display currency persistence use Supabase when connected.
+- Prices remain local for now (next milestone: `latest_prices_cache` adapter).
