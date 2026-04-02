@@ -1,11 +1,12 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export default async function HomePage() {
+export async function signOutAction() {
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (user) redirect("/dashboard");
+  await supabase.auth.signOut();
+  revalidatePath("/", "layout");
   redirect("/login");
 }
